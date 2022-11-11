@@ -22,12 +22,19 @@ func main() {
 	}
 
 	app.TemplateCache = tc
+	app.UseCache = false
+
+	// Variable to reference our app
+	repo := handlers.NewRepo(&app)
+
+	// Pass the repo variable back to the new handler
+	handlers.NewHandlers(repo)
 
 	// Render the NewTemplates and add a reference to the AppConfig
 	render.NewTemplates(&app)
 
-	http.HandleFunc("/", handlers.Home)
-	http.HandleFunc("/about", handlers.About)
+	http.HandleFunc("/", handlers.Repo.Home)
+	http.HandleFunc("/about", handlers.Repo.About)
 
 	fmt.Println(fmt.Sprintf("Server started at port %s", port))
 	http.ListenAndServe(port, nil)

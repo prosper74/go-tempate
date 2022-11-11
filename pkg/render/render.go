@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/atuprosper/go-project/pkg/config"
+	"github.com/atuprosper/go-project/pkg/models"
 )
 
 // A FuncMap is a map of functions that we can use in our template
@@ -21,12 +22,24 @@ func NewTemplates(a *config.AppConfig) {
 	app = a
 }
 
-func RenderTemplate(w http.ResponseWriter, tmpl string) {
+// This function adds default data to every templates by taking the specific data sent from the render function and attach this function to it
+func AddDefaultData(td *models.TemplateData) *models.TemplateData {
+	return td
+}
+
+func RenderTemplate(w http.ResponseWriter, tmpl string, td *models.TemplateData) {
 	// This will rebuild the template cache on every page render. It is really not efficient. A better way is to set application wide configuration, that will build the template cache only ones and then use it for every render. To do this we create a new config file in pkg folder
 	// tc, err := CreateTemplateCache()
 
+	var tc map[string]*template.Template
+
 	// Get the template cache from the app config
-	tc := app.TemplateCache
+	// Check if we are in dev mode, load cache from disk, else load it from the template
+	if app.UseCache {
+		tc = app.TemplateCache
+	} else {
+		tc, _ = CreateTemplateCache()
+	}
 
 	// If there are no template cache, die the server. If we get passed this, then we have our template cache
 	// if err != nil {
@@ -42,8 +55,11 @@ func RenderTemplate(w http.ResponseWriter, tmpl string) {
 	// Create a bytesBuffer that will hold the information of the parsed template in memory, and put them in a byte
 	buf := new(bytes.Buffer)
 
+	// Before we execute the buffer, we want to attach the AddDefaultData
+	td = AddDefaultData(td)
+
 	//Execeute the tamplate file and put it in the buffer
-	_ = t.Execute(buf, nil)
+	_ = t.Execute(buf, td)
 
 	// Write the buffer to the resposeWriter(browser)
 	_, err := buf.WriteTo(w)
